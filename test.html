@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>BGA Unit tests with QUnit</title>
+    <!-- This css is required for the QUnit Report -->
+    <link rel="stylesheet" href="//code.jquery.com/qunit/qunit-1.14.0.css">
+  </head>
+  <body>
+    <!-- These two divs are required by the QUnit Report -->
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+
+    <!-- ****** BGA Dojo Config *********** -->
+    <script type="text/javascript">
+      var g_gamethemeurl = '';
+
+      var dojoConfig = {
+        parseOnLoad: false,
+        async: true,
+        useXDomain: true,
+	      baseUrl: "https://x.boardgamearena.net/data/themereleases/220420-1001/js/dojoroot/dojo/",
+        packages: [
+          {
+            name: "ebg",
+            location: "https://x.boardgamearena.net/data/themereleases/220420-1001/js/modules"
+          },
+          {name: "svelte", location: "https://x.boardgamearena.net/data/themereleases/220420-1001/js/sveltec/dist", main: "index"},
+          {name: "jquery", location: "https://x.boardgamearena.net/data/themereleases/220420-1001/js/jquery", main: "jquery-3.4.1_noconflict.min"}
+        ],
+        dojoBlankHtmlUrl: "/blank.html",
+        locale: 'en'
+    };
+    </script>
+
+    <!-- Loading QUnit and dojo libraries -->
+    <script src="//code.jquery.com/qunit/qunit-1.14.0.js"></script>
+    <!-- Loading Dojo from BGA -->
+    <script type="text/javascript" src="//x.boardgamearena.net/data/themereleases/220420-1001/js/dojoroot/dojo/dojo.js"> </script>
+    <script type="text/javascript" src="//x.boardgamearena.net/data/themereleases/220420-1001/js/modules/layer/ly_studio.js"> </script>
+
+    <!-- Run test using dojo -->
+    <script type="text/javascript">
+      // Set autostart false since we're using AMD to load code asynchronously
+      QUnit.config.autostart = false;
+
+      require([
+          "./thecrew.test.js"
+      ], function () {
+          // Start the test using QUnit.start() after finish loading the test file
+          QUnit.start();
+      });
+
+    </script>
+  </body>
+</html>
