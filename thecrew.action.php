@@ -239,4 +239,17 @@ public function actAnswerRestartMission()
     self::ajaxResponse( );
   }
 
+  ////////////////////////////////////////////////////////////////
+  // Debug: Load bug report state into this table save slot #1 //
+  ////////////////////////////////////////////////////////////////
+  public function loadBugSQL() {
+    if ($this->game->getBgaEnvironment() != 'studio') {
+      throw new Exception("Only available at Studio");
+    }
+    self::setAjaxMode();
+    $reportId = (int) self::getArg('report_id', AT_int, true);
+    $this->game->loadBugSQL($reportId);
+    self::ajaxResponse();
+  }
+
 }

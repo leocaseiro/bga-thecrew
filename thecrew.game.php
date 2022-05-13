@@ -299,4 +299,83 @@ class thecrew extends Table
   public static function translate($text){
     return self::_($text);
   }
+
+  ////////////////////////////////////////////////////////////////
+  // Debug: Load bug report state into this table save slot #1 //
+  ////////////////////////////////////////////////////////////////
+   /*
+   * loadBug: in studio, type loadBug(20762) into the table chat to load a bug report from production
+   * client side JavaScript will fetch each URL below in sequence, then refresh the page
+   */
+  public function loadBug($reportId)
+  {
+    if ($this->getBgaEnvironment() != 'studio') {
+      throw new Exception("Only available at Studio");
+    }
+
+    $db = explode('_', self::getUniqueValueFromDB("SELECT SUBSTRING_INDEX(DATABASE(), '_', -2)"));
+    $game = $db[0];
+    $tableId = $db[1];
+    // self::notifyAllPlayers('loadBug1', "https://studio.boardgamearena.com/admin/studio/getSavedGameStateFromProduction.html?game=$game&report_id=$reportId&table_id=$tableId", []);
+    // self::notifyAllPlayers('loadBug2', "https://studio.boardgamearena.com/table/table/loadSaveState.html?table=$tableId&state=1", []);
+    // self::notifyAllPlayers('loadBug3', "https://studio.boardgamearena.com/1/$game/$game/loadBugSQL.html?table=$tableId&report_id=$reportId", []);
+    // self::notifyAllPlayers('loadBug4', "https://studio.boardgamearena.com/admin/studio/clearGameserverPhpCache.html?game=$game", []);
+
+    self::notifyAllPlayers('loadBug', "Trying to load <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a>", [
+      'urls' => [
+        // Emulates "load bug report" in control panel
+        "https://studio.boardgamearena.com/admin/studio/getSavedGameStateFromProduction.html?game=$game&report_id=$reportId&table_id=$tableId",
+
+        // Emulates "load 1" at this table
+        "https://studio.boardgamearena.com/table/table/loadSaveState.html?table=$tableId&state=1",
+
+        // Calls the function below to update SQL
+        "https://studio.boardgamearena.com/1/$game/$game/loadBugSQL.html?table=$tableId&report_id=$reportId",
+
+        // Emulates "clear PHP cache" in control panel
+        // Needed at the end because BGA is caching player info
+        "https://studio.boardgamearena.com/admin/studio/clearGameserverPhpCache.html?game=$game",
+      ]
+    ]);
+  }
+
+  /*
+   * loadBugSQL: in studio, this is one of the URLs triggered by loadBug() above
+   */
+  public function loadBugSQL($reportId)
+  {
+    if ($this->getBgaEnvironment() != 'studio') {
+      throw new Exception("Only available at Studio");
+    }
+
+    $studioPlayer = self::getCurrentPlayerId();
+    $players = self::getObjectListFromDb("SELECT player_id FROM player", true);
+
+    // Change for your game
+    // We are setting the current state to match the start of a player's turn if it's already game over
+    $sql = [
+      "UPDATE global SET global_value=2 WHERE global_id=1 AND global_value=99"
+    ];
+    foreach ($players as $pId) {
+      // All games can keep this SQL
+      $sql[] = "UPDATE player SET player_id=$studioPlayer WHERE player_id=$pId";
+      $sql[] = "UPDATE global SET global_value=$studioPlayer WHERE global_value=$pId";
+      $sql[] = "UPDATE stats SET stats_player_id=$studioPlayer WHERE stats_player_id=$pId";
+
+      // Add game-specific SQL update the tables for your game
+      $sql[] = "UPDATE global_variables SET value='$studioPlayer' WHERE value=$pId";
+      $sql[] = "UPDATE card SET card_location='hand_$studioPlayer' WHERE card_location='hand_$pId'";
+
+      $studioPlayer++;
+    }
+    $msg = "<b>Loaded <a href='https://boardgamearena.com/bug?id=$reportId' target='_blank'>bug report $reportId</a></b><hr><ul><li>" . implode(';</li><li>', $sql) . ';</li></ul>';
+    self::warn($msg);
+    self::notifyAllPlayers('message', $msg, []);
+
+    foreach ($sql as $q) {
+      self::DbQuery($q);
+    }
+
+    self::reloadPlayersBasicInfos();
+  }
 }
