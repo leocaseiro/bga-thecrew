@@ -26,9 +26,11 @@ trait PickTaskTrait
   /*
    * chooseTask action : assign the task to a player
    */
-  function actChooseTask($taskId)
+  function actChooseTask($taskId, $checkAction = true)
   {
-    self::checkAction("actChooseTask");
+    if ($checkAction) {
+      self::checkAction('actChooseTask');
+    }
 
     // Sanity check
     $taskIds = Tasks::getUnassignedIds();
@@ -41,6 +43,21 @@ trait PickTaskTrait
     Notifications::assignTask($task, $player);
 
     $this->gamestate->nextState('next');
+  }
+
+
+  /*
+   * Auto select last task to be picked by active player
+   */
+  function stPickTask()
+  {
+    $tasks = Tasks::getUnassigned();
+
+    if(count($tasks) == 1){
+      self::notifyAllPlayers( "wait2seconds", clienttranslate( 'Selecting the last task automatically' ), array() );
+      $task = $tasks[0];
+      $this->actChooseTask($task["id"], false);
+    }
   }
 
 
